@@ -230,7 +230,6 @@ export default function Hero() {
           }}
           aria-label={`Video self-introduction of ${PROFILE.name}`}
         >
-          <source src="/hero/hero.webm" type="video/webm" />
           <source src="/hero/hero.mp4" type="video/mp4" />
         </video>
       </div>
@@ -305,7 +304,7 @@ export default function Hero() {
           </h1>
 
           {/* =====================================
-              MOBILE BUTTONS
+              BUTTONS
           ===================================== */}
           <div
             className="
