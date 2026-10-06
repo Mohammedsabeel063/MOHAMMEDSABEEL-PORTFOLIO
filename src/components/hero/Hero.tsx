@@ -10,99 +10,91 @@ export default function Hero() {
 
   useEffect(() => {
     const section = sectionRef.current;
-    const v = videoRef.current;
+    const video = videoRef.current;
 
-    if (!section || !v) return;
+    if (!section || !video) return;
 
     let wasVisible = false;
-    let needsUnmute = false;
+    let needsUserInteraction = false;
 
-    const events = ["pointerdown", "keydown", "touchend"] as const;
-
-    const playFromStart = async () => {
-      v.currentTime = 0;
-      v.muted = false;
-      v.volume = 1;
-
+    const playVideoWithSound = async () => {
       try {
-        await v.play();
-        needsUnmute = false;
-      } catch {
-        v.muted = true;
-        needsUnmute = true;
+        video.muted = false;
+        video.volume = 1;
 
-        try {
-          await v.play();
-        } catch {
-          // Ignore autoplay failure
-        }
+        await video.play();
+
+        needsUserInteraction = false;
+      } catch {
+        // Mobile browsers may block autoplay with sound.
+        needsUserInteraction = true;
       }
     };
 
-    const onGesture = async () => {
-      if (!needsUnmute) return;
-
-      needsUnmute = false;
-
-      v.muted = false;
-      v.volume = 1;
+    const startAfterInteraction = async () => {
+      if (!needsUserInteraction) return;
 
       try {
-        await v.play();
-      } catch {
-        // Ignore playback failure
-      }
+        video.muted = false;
+        video.volume = 1;
 
-      events.forEach((event) => {
-        window.removeEventListener(event, onGesture);
-      });
+        await video.play();
+
+        needsUserInteraction = false;
+      } catch {
+        // Ignore playback failure.
+      }
     };
 
-    const obs = new IntersectionObserver(
+    const observer = new IntersectionObserver(
       ([entry]) => {
-        const isVisible = entry.intersectionRatio >= 0.35;
+        const isVisible = entry.intersectionRatio >= 0.25;
 
         if (isVisible === wasVisible) return;
 
         wasVisible = isVisible;
 
         if (isVisible) {
-          playFromStart();
+          playVideoWithSound();
         } else {
-          v.pause();
+          video.pause();
         }
       },
       {
-        threshold: [0.35],
+        threshold: [0.25],
       }
     );
 
-    obs.observe(section);
+    observer.observe(section);
 
-    events.forEach((event) => {
-      window.addEventListener(event, onGesture, { once: true });
+    /*
+     * Try autoplay with sound immediately.
+     * If Safari/iPhone blocks it, the first user interaction
+     * with the page will start the video with sound.
+     */
+    playVideoWithSound();
+
+    const interactionEvents = [
+      "pointerdown",
+      "touchstart",
+      "click",
+      "keydown",
+    ] as const;
+
+    interactionEvents.forEach((event) => {
+      window.addEventListener(event, startAfterInteraction, {
+        once: true,
+      });
     });
 
-    const rect = section.getBoundingClientRect();
-
-    const visibleHeight =
-      Math.min(rect.bottom, window.innerHeight) -
-      Math.max(rect.top, 0);
-
-    const visibilityRatio =
-      Math.max(0, visibleHeight) / Math.max(1, rect.height);
-
-    if (visibilityRatio >= 0.35) {
-      wasVisible = true;
-      playFromStart();
-    }
-
     return () => {
-      obs.disconnect();
+      observer.disconnect();
 
-      events.forEach((event) => {
-        window.removeEventListener(event, onGesture);
+      interactionEvents.forEach((event) => {
+        window.removeEventListener(event, startAfterInteraction);
       });
+
+      video.pause();
     };
   }, []);
 
@@ -122,6 +114,7 @@ export default function Hero() {
         bg-[var(--paper)]
         pt-20
         pb-8
+
         md:justify-center
         md:pt-0
         md:pb-0
@@ -184,7 +177,7 @@ export default function Hero() {
       </div>
 
       {/* =========================================
-          VIDEO
+          CHARACTER VIDEO
       ========================================= */}
       <div
         className="
@@ -194,12 +187,11 @@ export default function Hero() {
           w-full
           items-center
           justify-center
-          pointer-events-none
           shrink-0
 
-          h-[45svh]
-          min-h-[270px]
-          max-h-[330px]
+          h-[43svh]
+          min-h-[260px]
+          max-h-[360px]
 
           sm:h-[50svh]
           sm:min-h-[300px]
@@ -212,12 +204,16 @@ export default function Hero() {
       >
         <video
           ref={videoRef}
+          src="/hero/hero.mp4"
+          autoPlay
           playsInline
           preload="auto"
+          controls={false}
           className="
+            block
             h-full
             w-auto
-            max-w-[78vw]
+            max-w-[88vw]
             object-contain
 
             sm:max-w-[80vw]
@@ -229,9 +225,7 @@ export default function Hero() {
             mixBlendMode: "multiply",
           }}
           aria-label={`Video self-introduction of ${PROFILE.name}`}
-        >
-          <source src="/hero/hero.mp4" type="video/mp4" />
-        </video>
+        />
       </div>
 
       {/* =========================================
