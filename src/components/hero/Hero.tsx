@@ -4,174 +4,96 @@ import { useEffect, useRef } from "react";
 import { PROFILE } from "@/lib/data";
 import { scrollToTarget } from "@/lib/scroll";
 
-/*
- * The video file is "packed": left half = colour (premultiplied),
- * right half = alpha matte. This shader merges them into a
- * transparent image so it works on every browser, including iPhone.
- */
-const VERT = `
-attribute vec2 p;
-varying vec2 uv;
-void main() {
-  uv = p * 0.5 + 0.5;
-  gl_Position = vec4(p, 0.0, 1.0);
-}`;
-
-const FRAG = `
-precision mediump float;
-varying vec2 uv;
-uniform sampler2D t;
-void main() {
-  float a = texture2D(t, vec2(0.5 + uv.x * 0.5, uv.y)).r;
-  vec3 c = texture2D(t, vec2(uv.x * 0.5, uv.y)).rgb;
-  gl_FragColor = vec4(min(c, vec3(a)), a);
-}`;
-
 export default function Hero() {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const sectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const section = sectionRef.current;
     const video = videoRef.current;
-    const canvas = canvasRef.current;
-    if (!section || !video || !canvas) return;
 
-    /* ---------------- WebGL renderer ---------------- */
-    const gl = canvas.getContext("webgl", {
-      alpha: true,
-      premultipliedAlpha: true,
-      antialias: false,
-    });
-    if (!gl) return;
+    if (!section || !video) return;
 
-    const compile = (type: number, src: string) => {
-      const s = gl.createShader(type)!;
-      gl.shaderSource(s, src);
-      gl.compileShader(s);
-      return s;
-    };
-
-    const program = gl.createProgram()!;
-    gl.attachShader(program, compile(gl.VERTEX_SHADER, VERT));
-    gl.attachShader(program, compile(gl.FRAGMENT_SHADER, FRAG));
-    gl.linkProgram(program);
-    gl.useProgram(program);
-
-    const buffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.bufferData(
-      gl.ARRAY_BUFFER,
-      new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]),
-      gl.STATIC_DRAW
-    );
-    const loc = gl.getAttribLocation(program, "p");
-    gl.enableVertexAttribArray(loc);
-    gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
-
-    const texture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-    gl.viewport(0, 0, canvas.width, canvas.height);
-    gl.clearColor(0, 0, 0, 0);
-
-    let raf = 0;
-    let dirty = true;
-
-    const markDirty = () => {
-      dirty = true;
-    };
-    const videoEvents = ["loadeddata", "seeked", "play", "playing"] as const;
-    videoEvents.forEach((e) => video.addEventListener(e, markDirty));
-
-    const render = () => {
-      // Draw while playing, or once after a seek/load while paused
-      if (video.readyState >= 2 && (!video.paused || dirty)) {
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.texImage2D(
-          gl.TEXTURE_2D,
-          0,
-          gl.RGBA,
-          gl.RGBA,
-          gl.UNSIGNED_BYTE,
-          video
-        );
-        gl.clear(gl.COLOR_BUFFER_BIT);
-        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-        dirty = false;
-      }
-      raf = requestAnimationFrame(render);
-    };
-    raf = requestAnimationFrame(render);
-
-    /* ---------------- Playback logic ---------------- */
     let wasVisible = false;
-    let needsUnmute = false;
+    let needsUserInteraction = false;
 
-    const playFromStart = async () => {
-      video.currentTime = 0;
+    const playVideoWithSound = async () => {
       try {
         video.muted = false;
         video.volume = 1;
+
         await video.play();
-        needsUnmute = false;
+
+        needsUserInteraction = false;
       } catch {
-        // Browser blocked autoplay with sound: start muted so it still
-        // plays on load, then turn sound on at the first interaction.
-        video.muted = true;
-        needsUnmute = true;
-        video.play().catch(() => { });
+        // Mobile browsers may block autoplay with sound.
+        needsUserInteraction = true;
+      }
+    };
+
+    const startAfterInteraction = async () => {
+      if (!needsUserInteraction) return;
+
+      try {
+        video.muted = false;
+        video.volume = 1;
+
+        await video.play();
+
+        needsUserInteraction = false;
+      } catch {
+        // Ignore playback failure.
       }
     };
 
     const observer = new IntersectionObserver(
       ([entry]) => {
         const isVisible = entry.intersectionRatio >= 0.25;
+
         if (isVisible === wasVisible) return;
+
         wasVisible = isVisible;
 
         if (isVisible) {
-          playFromStart(); // every return to hero restarts from 0
+          playVideoWithSound();
         } else {
           video.pause();
         }
       },
-      { threshold: [0.25] }
+      {
+        threshold: [0.25],
+      }
     );
+
     observer.observe(section);
 
-    const onInteraction = () => {
-      if (!needsUnmute) return;
-      needsUnmute = false;
-      video.muted = false;
-      video.volume = 1;
-      if (video.paused && wasVisible && !video.ended) {
-        video.play().catch(() => { });
-      }
-    };
+    /*
+     * Try autoplay with sound immediately.
+     * If Safari/iPhone blocks it, the first user interaction
+     * with the page will start the video with sound.
+     */
+    playVideoWithSound();
 
     const interactionEvents = [
       "pointerdown",
-      "touchend",
+      "touchstart",
       "click",
       "keydown",
     ] as const;
-    interactionEvents.forEach((e) =>
-      window.addEventListener(e, onInteraction)
-    );
+
+    interactionEvents.forEach((event) => {
+      window.addEventListener(event, startAfterInteraction, {
+        once: true,
+      });
+    });
 
     return () => {
       observer.disconnect();
-      cancelAnimationFrame(raf);
-      videoEvents.forEach((e) => video.removeEventListener(e, markDirty));
-      interactionEvents.forEach((e) =>
-        window.removeEventListener(e, onInteraction)
-      );
+
+      interactionEvents.forEach((event) => {
+        window.removeEventListener(event, startAfterInteraction);
+      });
+
       video.pause();
     };
   }, []);
@@ -255,7 +177,7 @@ export default function Hero() {
       </div>
 
       {/* =========================================
-          CHARACTER VIDEO (transparent, drawn on canvas)
+          CHARACTER VIDEO
       ========================================= */}
       <div
         className="
@@ -280,30 +202,13 @@ export default function Hero() {
           md:max-h-none
         "
       >
-        {/* Source video: kept in the DOM (needed for sound + decoding)
-            but not shown. The canvas below is what visitors see. */}
         <video
           ref={videoRef}
           src="/hero/hero.mp4"
+          autoPlay
           playsInline
           preload="auto"
           controls={false}
-          aria-hidden
-          tabIndex={-1}
-          style={{
-            position: "absolute",
-            width: 1,
-            height: 1,
-            opacity: 0,
-            pointerEvents: "none",
-          }}
-        />
-
-        <canvas
-          ref={canvasRef}
-          width={900}
-          height={1600}
-          role="img"
           className="
             block
             h-full
@@ -317,6 +222,7 @@ export default function Hero() {
           "
           style={{
             aspectRatio: "768/960",
+            mixBlendMode: "multiply",
           }}
           aria-label={`Video self-introduction of ${PROFILE.name}`}
         />
