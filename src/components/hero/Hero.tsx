@@ -7,7 +7,7 @@ import { scrollToTarget } from "@/lib/scroll";
 /*
  * hero.mp4
  *
- * The video is packed:
+ * Packed video:
  * LEFT  = character/color video
  * RIGHT = alpha/transparency mask
  *
@@ -17,7 +17,7 @@ import { scrollToTarget } from "@/lib/scroll";
  * Visible character half:
  * 900 × 1600
  *
- * WebGL combines the two halves and produces
+ * WebGL combines both halves and creates
  * a transparent character on the canvas.
  */
 
@@ -317,8 +317,6 @@ export default function Hero() {
           wasVisible = isVisible;
 
           if (isVisible) {
-            // Restart video whenever
-            // the user returns to Hero.
             playFromStart();
           } else {
             video.pause();
@@ -456,7 +454,7 @@ export default function Hero() {
           className="
             absolute
             left-1/2
-            top-[58%]
+            top-[54%]
 
             -translate-x-1/2
             -translate-y-1/2
@@ -485,7 +483,7 @@ export default function Hero() {
       </div>
 
       {/* =========================================
-          CHARACTER
+          CHARACTER VIDEO
       ========================================= */}
 
       <div
@@ -511,12 +509,7 @@ export default function Hero() {
           md:max-h-none
         "
       >
-        {/* =====================================
-            HIDDEN SOURCE VIDEO
-
-            IMPORTANT:
-            Your file is hero.mp4
-        ===================================== */}
+        {/* Hidden source video */}
 
         <video
           ref={videoRef}
@@ -535,15 +528,7 @@ export default function Hero() {
           }}
         />
 
-        {/* =====================================
-            VISIBLE TRANSPARENT CHARACTER
-
-            Canvas:
-            900 × 1600
-
-            Source:
-            1800 × 1600
-        ===================================== */}
+        {/* Visible transparent character */}
 
         <canvas
           ref={canvasRef}
@@ -556,7 +541,7 @@ export default function Hero() {
             w-auto
             max-w-[94vw]
 
-            scale-[1.08]
+            scale-[1.15]
 
             sm:max-w-[88vw]
             sm:scale-100
@@ -605,9 +590,7 @@ export default function Hero() {
             animationDelay: "0.2s",
           }}
         >
-          {/* =====================================
-              HEADING
-          ===================================== */}
+          {/* HEADING */}
 
           <h1
             className="
@@ -646,9 +629,7 @@ export default function Hero() {
             </span>
           </h1>
 
-          {/* =====================================
-              BUTTONS
-          ===================================== */}
+          {/* BUTTONS */}
 
           <div
             className="
