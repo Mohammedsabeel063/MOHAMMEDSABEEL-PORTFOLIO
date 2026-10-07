@@ -492,7 +492,7 @@ export default function Hero() {
 
         <video
           ref={videoRef}
-          src="/hero/hero-alpha.mp4"
+          src="/hero/hero.mp4"
           playsInline
           preload="auto"
           controls={false}
