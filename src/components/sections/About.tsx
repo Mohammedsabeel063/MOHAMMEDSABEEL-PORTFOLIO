@@ -14,7 +14,7 @@ function IDCard() {
   const angleRef = useRef(0);
   const rafRef = useRef<number>(0);
 
-  /* Idle sway animation */
+  /* ================= IDLE SWAY ANIMATION ================= */
   useEffect(() => {
     let t = 0;
 
@@ -33,7 +33,7 @@ function IDCard() {
     return () => cancelAnimationFrame(rafRef.current);
   }, []);
 
-  /* Pointer movement pendulum */
+  /* ================= POINTER MOVEMENT ================= */
   const handlePointerMove = (e: React.PointerEvent) => {
     const rect = cardRef.current?.getBoundingClientRect();
 
@@ -45,7 +45,14 @@ function IDCard() {
     velRef.current = dx * 6;
   };
 
-  /* Spring damping */
+  /* ================= MOBILE CLICK FLIP ================= */
+  const handleCardClick = () => {
+    if (window.innerWidth < 1024) {
+      setFlipped((prev) => !prev);
+    }
+  };
+
+  /* ================= SPRING DAMPING ================= */
   useEffect(() => {
     let lastTime = performance.now();
 
@@ -62,7 +69,8 @@ function IDCard() {
 
       setAngle(angleRef.current);
 
-      requestAnimationFrame(spring);
+      const raf = requestAnimationFrame(spring);
+      rafRef.current = raf;
     };
 
     const raf = requestAnimationFrame(spring);
@@ -75,7 +83,7 @@ function IDCard() {
       className="flex flex-col items-center w-full"
       onPointerMove={handlePointerMove}
     >
-      {/* Lanyard strap */}
+      {/* ================= LANYARD ================= */}
       <div
         aria-hidden
         className="relative flex flex-col items-center"
@@ -135,7 +143,7 @@ function IDCard() {
         />
       </div>
 
-      {/* Responsive hover area */}
+      {/* ================= RESPONSIVE CARD AREA ================= */}
       <div
         className="
           relative
@@ -145,10 +153,21 @@ function IDCard() {
         style={{
           perspective: "1000px",
         }}
-        onPointerEnter={() => setFlipped(true)}
-        onPointerLeave={() => setFlipped(false)}
+        onPointerEnter={() => {
+          /* Desktop hover only */
+          if (window.innerWidth >= 1024) {
+            setFlipped(true);
+          }
+        }}
+        onPointerLeave={() => {
+          /* Desktop hover only */
+          if (window.innerWidth >= 1024) {
+            setFlipped(false);
+          }
+        }}
+        onClick={handleCardClick}
       >
-        {/* Rotating card */}
+        {/* ================= ROTATING CARD ================= */}
         <div
           ref={cardRef}
           style={{
@@ -336,6 +355,8 @@ function IDCard() {
     </div>
   );
 }
+
+/* ================= ABOUT SECTION ================= */
 
 export default function About() {
   return (

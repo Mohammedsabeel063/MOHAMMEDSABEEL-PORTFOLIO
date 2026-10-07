@@ -23,7 +23,6 @@ import { scrollToTarget } from "@/lib/scroll";
 
 const VERT = `
 attribute vec2 p;
-
 varying vec2 uv;
 
 void main() {
@@ -36,7 +35,6 @@ const FRAG = `
 precision mediump float;
 
 varying vec2 uv;
-
 uniform sampler2D t;
 
 void main() {
@@ -121,14 +119,10 @@ export default function Hero() {
     gl.bufferData(
       gl.ARRAY_BUFFER,
       new Float32Array([
-        -1,
-        -1,
-        1,
-        -1,
-        -1,
-        1,
-        1,
-        1,
+        -1, -1,
+        1, -1,
+        -1, 1,
+        1, 1,
       ]),
       gl.STATIC_DRAW
     );
@@ -534,14 +528,20 @@ export default function Hero() {
             block
             h-full
             w-auto
+
             max-w-[94vw]
 
             sm:max-w-[86vw]
 
             md:max-w-[min(520px,85vw)]
+
+            scale-[1.08]
+            sm:scale-[1.04]
+            md:scale-100
           "
           style={{
             aspectRatio: "900 / 1600",
+            transformOrigin: "center bottom",
           }}
           aria-label={`Video self-introduction of ${PROFILE.name}`}
         />
@@ -585,41 +585,46 @@ export default function Hero() {
 
           <h1
             className="
-              relative
-              z-50
+    relative
+    z-50
 
-              text-[1.85rem]
-              leading-[1.05]
+    text-[1.85rem]
+    leading-[1.05]
 
-              sm:text-4xl
+    sm:text-4xl
+    md:text-6xl
 
-              md:text-6xl
+    font-bold
+    tracking-tight
+    mb-5
 
-              font-bold
-              tracking-tight
-              mb-5
+    text-[var(--ink)]
 
-              text-[var(--ink)]
-
-              max-w-[760px]
-            "
+    max-w-[760px]
+  "
             style={{
               letterSpacing: "-0.045em",
             }}
           >
-            Backend-focused{" "}
+            <span className="block">
+              Backend{" "}
+              <span className="text-[var(--ink)]">
+                Software
+              </span>
+            </span>
+
             <span
+              className="
+      block
+      mt-1
+    "
               style={{
                 color: "#59624F",
               }}
             >
-              Software
-            </span>{" "}
-            <span className="text-[var(--ink)]">
-              Engineer.
+              Engineer
             </span>
           </h1>
-
           {/* BUTTONS */}
 
           <div
@@ -694,3 +699,4 @@ export default function Hero() {
     </section>
   );
 }
+
