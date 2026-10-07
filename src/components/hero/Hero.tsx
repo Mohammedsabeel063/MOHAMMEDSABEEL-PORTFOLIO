@@ -5,16 +5,20 @@ import { PROFILE } from "@/lib/data";
 import { scrollToTarget } from "@/lib/scroll";
 
 /*
+ * hero.mp4
+ *
  * The video is packed:
  * LEFT  = character/color video
  * RIGHT = alpha/transparency mask
  *
- * hero-alpha.mp4 is 1800 × 1600:
- * LEFT 900 × 1600 = character
- * RIGHT 900 × 1600 = alpha mask
+ * Source video:
+ * 1800 × 1600
  *
- * WebGL combines both halves and displays only the
- * transparent character on the canvas.
+ * Visible character half:
+ * 900 × 1600
+ *
+ * WebGL combines the two halves and produces
+ * a transparent character on the canvas.
  */
 
 const VERT = `
@@ -36,13 +40,14 @@ varying vec2 uv;
 uniform sampler2D t;
 
 void main() {
-  // Right half = alpha mask
+
+  // RIGHT HALF = ALPHA MASK
   float a = texture2D(
     t,
     vec2(0.5 + uv.x * 0.5, uv.y)
   ).r;
 
-  // Left half = actual color video
+  // LEFT HALF = CHARACTER VIDEO
   vec3 c = texture2D(
     t,
     vec2(uv.x * 0.5, uv.y)
@@ -66,7 +71,7 @@ export default function Hero() {
     if (!section || !video || !canvas) return;
 
     /* =========================================
-       WEBGL RENDERER
+       WEBGL
     ========================================= */
 
     const gl = canvas.getContext("webgl", {
@@ -77,14 +82,14 @@ export default function Hero() {
 
     if (!gl) return;
 
-    const compile = (type: number, src: string) => {
+    const compile = (type: number, source: string) => {
       const shader = gl.createShader(type);
 
       if (!shader) {
         throw new Error("Unable to create WebGL shader");
       }
 
-      gl.shaderSource(shader, src);
+      gl.shaderSource(shader, source);
       gl.compileShader(shader);
 
       return shader;
@@ -132,12 +137,15 @@ export default function Hero() {
       gl.STATIC_DRAW
     );
 
-    const loc = gl.getAttribLocation(program, "p");
+    const position = gl.getAttribLocation(
+      program,
+      "p"
+    );
 
-    gl.enableVertexAttribArray(loc);
+    gl.enableVertexAttribArray(position);
 
     gl.vertexAttribPointer(
-      loc,
+      position,
       2,
       gl.FLOAT,
       false,
@@ -153,7 +161,10 @@ export default function Hero() {
 
     if (!texture) return;
 
-    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.bindTexture(
+      gl.TEXTURE_2D,
+      texture
+    );
 
     gl.texParameteri(
       gl.TEXTURE_2D,
@@ -193,7 +204,7 @@ export default function Hero() {
 
     gl.clearColor(0, 0, 0, 0);
 
-    let raf = 0;
+    let animationFrame = 0;
     let dirty = true;
 
     const markDirty = () => {
@@ -208,11 +219,14 @@ export default function Hero() {
     ] as const;
 
     videoEvents.forEach((event) => {
-      video.addEventListener(event, markDirty);
+      video.addEventListener(
+        event,
+        markDirty
+      );
     });
 
     /* =========================================
-       RENDER LOOP
+       CANVAS RENDER LOOP
     ========================================= */
 
     const render = () => {
@@ -234,7 +248,9 @@ export default function Hero() {
           video
         );
 
-        gl.clear(gl.COLOR_BUFFER_BIT);
+        gl.clear(
+          gl.COLOR_BUFFER_BIT
+        );
 
         gl.drawArrays(
           gl.TRIANGLE_STRIP,
@@ -245,13 +261,15 @@ export default function Hero() {
         dirty = false;
       }
 
-      raf = requestAnimationFrame(render);
+      animationFrame =
+        requestAnimationFrame(render);
     };
 
-    raf = requestAnimationFrame(render);
+    animationFrame =
+      requestAnimationFrame(render);
 
     /* =========================================
-       PLAYBACK
+       VIDEO PLAYBACK
     ========================================= */
 
     let wasVisible = false;
@@ -269,8 +287,8 @@ export default function Hero() {
         needsUnmute = false;
       } catch {
         /*
-         * iPhone/Safari may block autoplay with sound.
-         * Start muted and enable sound after interaction.
+         * Safari/iPhone can block autoplay
+         * when sound is enabled.
          */
 
         video.muted = true;
@@ -280,26 +298,36 @@ export default function Hero() {
       }
     };
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        const isVisible =
-          entry.intersectionRatio >= 0.25;
+    /* =========================================
+       INTERSECTION OBSERVER
+    ========================================= */
 
-        if (isVisible === wasVisible) return;
+    const observer =
+      new IntersectionObserver(
+        ([entry]) => {
+          const isVisible =
+            entry.intersectionRatio >= 0.25;
 
-        wasVisible = isVisible;
+          if (
+            isVisible === wasVisible
+          ) {
+            return;
+          }
 
-        if (isVisible) {
-          // Restart whenever the user returns to Hero.
-          playFromStart();
-        } else {
-          video.pause();
+          wasVisible = isVisible;
+
+          if (isVisible) {
+            // Restart video whenever
+            // the user returns to Hero.
+            playFromStart();
+          } else {
+            video.pause();
+          }
+        },
+        {
+          threshold: [0.25],
         }
-      },
-      {
-        threshold: [0.25],
-      }
-    );
+      );
 
     observer.observe(section);
 
@@ -345,7 +373,9 @@ export default function Hero() {
     return () => {
       observer.disconnect();
 
-      cancelAnimationFrame(raf);
+      cancelAnimationFrame(
+        animationFrame
+      );
 
       videoEvents.forEach((event) => {
         video.removeEventListener(
@@ -416,9 +446,6 @@ export default function Hero() {
         className="
           absolute
           inset-0
-          flex
-          items-center
-          justify-center
           pointer-events-none
           select-none
           overflow-hidden
@@ -427,15 +454,20 @@ export default function Hero() {
       >
         <span
           className="
+            absolute
+            left-1/2
+            top-[58%]
+
+            -translate-x-1/2
+            -translate-y-1/2
+
             font-bold
             tracking-tighter
             text-[var(--ink)]
             select-none
             whitespace-nowrap
 
-            translate-y-[115px]
-
-            md:translate-y-0
+            md:top-1/2
           "
           style={{
             fontSize:
@@ -453,7 +485,7 @@ export default function Hero() {
       </div>
 
       {/* =========================================
-          CHARACTER VIDEO / CANVAS
+          CHARACTER
       ========================================= */}
 
       <div
@@ -482,12 +514,8 @@ export default function Hero() {
         {/* =====================================
             HIDDEN SOURCE VIDEO
 
-            The video is only used for:
-            - decoding
-            - animation
-            - audio
-
-            Canvas is what the visitor sees.
+            IMPORTANT:
+            Your file is hero.mp4
         ===================================== */}
 
         <video
@@ -508,16 +536,13 @@ export default function Hero() {
         />
 
         {/* =====================================
-            TRANSPARENT CANVAS
+            VISIBLE TRANSPARENT CHARACTER
 
-            Visible half:
+            Canvas:
             900 × 1600
 
-            Source video:
+            Source:
             1800 × 1600
-
-            LEFT  = 900 × 1600 character
-            RIGHT = 900 × 1600 alpha
         ===================================== */}
 
         <canvas
@@ -530,7 +555,6 @@ export default function Hero() {
             h-full
             w-auto
             max-w-[94vw]
-            object-contain
 
             scale-[1.08]
 
