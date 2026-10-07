@@ -7,9 +7,15 @@ import { scrollToTarget } from "@/lib/scroll";
 /*
  * hero.mp4
  *
- * The video contains:
+ * Packed video:
  * LEFT  = character/color video
- * RIGHT = alpha/transparency map
+ * RIGHT = alpha/transparency mask
+ *
+ * Source video:
+ * 1800 × 1600
+ *
+ * Visible character half:
+ * 900 × 1600
  *
  * WebGL combines both halves to display
  * the character with a transparent background.
@@ -528,9 +534,9 @@ export default function Hero() {
             block
             h-full
             w-auto
-            max-w-[88vw]
+            max-w-[94vw]
 
-            sm:max-w-[80vw]
+            sm:max-w-[86vw]
 
             md:max-w-[min(520px,85vw)]
           "
