@@ -7,18 +7,12 @@ import { scrollToTarget } from "@/lib/scroll";
 /*
  * hero.mp4
  *
- * Packed video:
+ * The video contains:
  * LEFT  = character/color video
- * RIGHT = alpha/transparency mask
+ * RIGHT = alpha/transparency map
  *
- * Source video:
- * 1800 × 1600
- *
- * Visible character half:
- * 900 × 1600
- *
- * WebGL combines both halves and creates
- * a transparent character on the canvas.
+ * WebGL combines both halves to display
+ * the character with a transparent background.
  */
 
 const VERT = `
@@ -40,20 +34,16 @@ varying vec2 uv;
 uniform sampler2D t;
 
 void main() {
-
-  // RIGHT HALF = ALPHA MASK
   float a = texture2D(
     t,
     vec2(0.5 + uv.x * 0.5, uv.y)
   ).r;
 
-  // LEFT HALF = CHARACTER VIDEO
   vec3 c = texture2D(
     t,
     vec2(uv.x * 0.5, uv.y)
   ).rgb;
 
-  // Premultiplied alpha
   gl_FragColor = vec4(min(c, vec3(a)), a);
 }
 `;
@@ -269,7 +259,7 @@ export default function Hero() {
       requestAnimationFrame(render);
 
     /* =========================================
-       VIDEO PLAYBACK
+       PLAYBACK
     ========================================= */
 
     let wasVisible = false;
@@ -286,11 +276,6 @@ export default function Hero() {
 
         needsUnmute = false;
       } catch {
-        /*
-         * Safari/iPhone may block autoplay
-         * when sound is enabled.
-         */
-
         video.muted = true;
         needsUnmute = true;
 
@@ -412,7 +397,7 @@ export default function Hero() {
         bg-[var(--paper)]
 
         pt-20
-        pb-10
+        pb-8
 
         md:min-h-[100svh]
         md:justify-center
@@ -500,13 +485,13 @@ export default function Hero() {
           justify-center
           shrink-0
 
-          h-[58svh]
-          min-h-[350px]
-          max-h-[520px]
+          h-[43svh]
+          min-h-[260px]
+          max-h-[360px]
 
-          sm:h-[60svh]
-          sm:min-h-[380px]
-          sm:max-h-[540px]
+          sm:h-[50svh]
+          sm:min-h-[300px]
+          sm:max-h-[390px]
 
           md:h-[min(96svh,1040px)]
           md:min-h-0
@@ -543,15 +528,11 @@ export default function Hero() {
             block
             h-full
             w-auto
-            max-w-[94vw]
+            max-w-[88vw]
 
-            scale-[1.22]
-
-            sm:max-w-[88vw]
-            sm:scale-100
+            sm:max-w-[80vw]
 
             md:max-w-[min(520px,85vw)]
-            md:scale-100
           "
           style={{
             aspectRatio: "900 / 1600",
