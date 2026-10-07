@@ -287,7 +287,7 @@ export default function Hero() {
         needsUnmute = false;
       } catch {
         /*
-         * Safari/iPhone can block autoplay
+         * Safari/iPhone may block autoplay
          * when sound is enabled.
          */
 
@@ -405,12 +405,16 @@ export default function Hero() {
         flex
         flex-col
         items-center
-        min-h-[100svh]
+
+        min-h-0
+
         overflow-hidden
         bg-[var(--paper)]
-        pt-20
-        pb-8
 
+        pt-20
+        pb-10
+
+        md:min-h-[100svh]
         md:justify-center
         md:pt-0
         md:pb-0
@@ -496,13 +500,13 @@ export default function Hero() {
           justify-center
           shrink-0
 
-          h-[52svh]
-          min-h-[330px]
-          max-h-[460px]
+          h-[58svh]
+          min-h-[350px]
+          max-h-[520px]
 
-          sm:h-[55svh]
-          sm:min-h-[360px]
-          sm:max-h-[500px]
+          sm:h-[60svh]
+          sm:min-h-[380px]
+          sm:max-h-[540px]
 
           md:h-[min(96svh,1040px)]
           md:min-h-0
@@ -541,7 +545,7 @@ export default function Hero() {
             w-auto
             max-w-[94vw]
 
-            scale-[1.15]
+            scale-[1.22]
 
             sm:max-w-[88vw]
             sm:scale-100
